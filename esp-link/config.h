@@ -41,6 +41,7 @@ typedef struct {
   int8_t   data_bits;
   int8_t   parity;
   int8_t   stop_bits;
+  int8_t   invisp;                     // invert ISP pin for STM32
 } FlashConfig;
 extern FlashConfig flashConfig;
 

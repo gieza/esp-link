@@ -18,7 +18,8 @@
 static struct espconn serbridgeConn1; // plain bridging port
 static struct espconn serbridgeConn2; // programming port
 static esp_tcp serbridgeTcp1, serbridgeTcp2;
-static int8_t mcu_reset_pin, mcu_isp_pin;
+static int8_t mcu_reset_pin, mcu_isp_pin; 
+static bool mcu_isp_val;
 
 uint8_t in_mcu_flashing;   // for disabling slip during MCU flashing
 
@@ -150,9 +151,9 @@ telnetUnwrap(serbridgeConnData *conn, uint8_t *inBuf, int len)
       case RTS_ON:
         if (mcu_isp_pin >= 0) {
 #ifdef SERBR_DBG
-          os_printf("Telnet: ISP gpio%d LOW\n", mcu_isp_pin);
+          os_printf("Telnet: ISP gpio%d is set to %d\n", mcu_isp_pin, !mcu_isp_val);
 #endif
-          GPIO_OUTPUT_SET(mcu_isp_pin, 0);
+          GPIO_OUTPUT_SET(mcu_isp_pin, !mcu_isp_val);
           os_delay_us(100L);
         }
 #ifdef SERBR_DBG
@@ -163,9 +164,9 @@ telnetUnwrap(serbridgeConnData *conn, uint8_t *inBuf, int len)
       case RTS_OFF:
         if (mcu_isp_pin >= 0) {
 #ifdef SERBR_DBG
-          os_printf("Telnet: ISP gpio%d HIGH\n", mcu_isp_pin);
+          os_printf("Telnet: ISP gpio%d is set to %d\n", mcu_isp_pin, mcu_isp_val);
 #endif
-          GPIO_OUTPUT_SET(mcu_isp_pin, 1);
+          GPIO_OUTPUT_SET(mcu_isp_pin, mcu_isp_val);
           os_delay_us(100L);
         }
         if (in_mcu_flashing > 0) in_mcu_flashing--;
@@ -294,7 +295,8 @@ serbridgeRecvCb(void *arg, char *data, unsigned short len)
   if (conn->conn_mode == cmInit) {
 
     // If the connection starts with the Arduino or ARM reset sequence we perform a RESET
-    if ((len == 2 && strncmp(data, "0 ", 2) == 0) ||
+    if ((len == 1 && *data == 0x7F) ||                  // for STM32
+        (len == 2 && strncmp(data, "0 ", 2) == 0) ||
         (len == 2 && strncmp(data, "?\n", 2) == 0) ||
         (len == 3 && strncmp(data, "?\r\n", 3) == 0)) {
       startPGM = true;
@@ -328,13 +330,18 @@ serbridgeRecvCb(void *arg, char *data, unsigned short len)
     os_delay_us(2*1000L); // time for os_printf to happen
 #endif
     // send reset to arduino/ARM, send "ISP" signal for the duration of the programming
+    // for STM32 set ISP pin to 1 before reset
+    if (mcu_isp_pin >= 0 && mcu_isp_val == 0) { 
+      GPIO_OUTPUT_SET(mcu_isp_pin, !mcu_isp_val);
+      os_delay_us(1000L);
+    }
     if (mcu_reset_pin >= 0) GPIO_OUTPUT_SET(mcu_reset_pin, 0);
     os_delay_us(100L);
-    if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, 0);
+    if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, !mcu_isp_val);
     os_delay_us(2000L);
     if (mcu_reset_pin >= 0) GPIO_OUTPUT_SET(mcu_reset_pin, 1);
     //os_delay_us(100L);
-    //if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, 1);
+    //if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, !mcu_isp_val);
     os_delay_us(1000L); // wait a millisecond before writing to the UART below
     conn->conn_mode = cmPGM;
     in_mcu_flashing++; // disable SLIP so it doesn't interfere with flashing
@@ -494,11 +501,14 @@ serbridgeDisconCb(void *arg)
   conn->txbufferlen = 0;
   // Send reset to attached uC if it was in programming mode
   if (conn->conn_mode == cmPGM && mcu_reset_pin >= 0) {
-    if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, 1);
-    os_delay_us(100L);
-    GPIO_OUTPUT_SET(mcu_reset_pin, 0);
-    os_delay_us(100L);
-    GPIO_OUTPUT_SET(mcu_reset_pin, 1);
+    if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, !mcu_isp_val);
+    /* Reset is not needed in case of STM32 */
+    if (mcu_isp_val != 0) {
+      os_delay_us(100L);
+      GPIO_OUTPUT_SET(mcu_reset_pin, 0);
+      os_delay_us(1000L);
+      GPIO_OUTPUT_SET(mcu_reset_pin, 1);
+    }
   }
   conn->conn = NULL;
 }
@@ -557,6 +567,7 @@ serbridgeInitPins()
 {
   mcu_reset_pin = flashConfig.reset_pin;
   mcu_isp_pin = flashConfig.isp_pin;
+  mcu_isp_val = flashConfig.invisp ? 0 : 1; // 1 - AVR ISP pin, 0 - STM32 inverted ISP pin
 #ifdef SERBR_DBG
   os_printf("Serbridge pins: reset=%d isp=%d swap=%d\n",
       mcu_reset_pin, mcu_isp_pin, flashConfig.swap_uart);
@@ -578,12 +589,16 @@ serbridgeInitPins()
     system_uart_de_swap();
   }
 
-  // set both pins to 1 before turning them on so we don't cause a reset
-  if (mcu_isp_pin >= 0)   GPIO_OUTPUT_SET(mcu_isp_pin, 1);
+  // set both pins to default values before turning them on so we don't cause a reset
+  if (mcu_isp_pin >= 0)   GPIO_OUTPUT_SET(mcu_isp_pin, mcu_isp_val);
   if (mcu_reset_pin >= 0) GPIO_OUTPUT_SET(mcu_reset_pin, 1);
   // switch pin mux to make these pins GPIO pins
   if (mcu_reset_pin >= 0) makeGpio(mcu_reset_pin);
   if (mcu_isp_pin >= 0)   makeGpio(mcu_isp_pin);
+  // Reset Slave MCU in case of STM32 (for el-client sync)
+  if (mcu_isp_val == 0) {
+    serbridgeReset();
+  }
 }
 
 // Start transparent serial bridge TCP server on specified port (typ. 23)

@@ -34,6 +34,7 @@ FlashConfig flashDefault = {
   .data_bits	= EIGHT_BITS,
   .parity	= NONE_BITS,
   .stop_bits	= ONE_STOP_BIT,
+  .invisp       = 0
 };
 
 typedef union {
