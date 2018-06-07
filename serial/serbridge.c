@@ -372,16 +372,11 @@ sendtxbuffer(serbridgeConnData *conn)
   if (conn->txbufferlen != 0) {
     //os_printf("TX %p %d\n", conn, conn->txbufferlen);
     conn->readytosend = false;
-    result = espconn_sent(conn->conn, (uint8_t*)conn->txbuffer, conn->txbufferlen);
+    result = espconn_send(conn->conn, (uint8_t*)conn->txbuffer, conn->txbufferlen);
     conn->txbufferlen = 0;
     if (result != ESPCONN_OK) {
-      os_printf("sendtxbuffer: espconn_sent error %d on conn %p\n", result, conn);
-      conn->txbufferlen = 0;
+      os_printf("sendtxbuffer: espconn_send error %d on conn %p\n", result, conn);
       if (!conn->txoverflow_at) conn->txoverflow_at = system_get_time();
-    } else {
-      conn->sentbuffer = conn->txbuffer;
-      conn->txbuffer = NULL;
-      conn->txbufferlen = 0;
     }
   }
   return result;
@@ -401,6 +396,9 @@ espbuffsend(serbridgeConnData *conn, const char *data, uint16 len)
   if (conn->txbuffer == NULL) conn->txbuffer = os_zalloc(MAX_TXBUFFER);
   if (conn->txbuffer == NULL) {
     os_printf("espbuffsend: cannot alloc tx buffer\n");
+    uint32_t free = system_get_free_heap_size();
+    os_printf("espbuffsend: free_heap_size: %d, len = %d\n",free,len); 
+    // free_heap_size: 9072, len = 13 and E:M 2928 :)
     return -128;
   }
 
@@ -428,7 +426,7 @@ overflow:
     // we've already been overflowing
     if (system_get_time() - conn->txoverflow_at > 10*1000*1000) {
       // no progress in 10 seconds, kill the connection
-      os_printf("serbridge: killing overlowing stuck conn %p\n", conn);
+      os_printf("serbridge: killing overflowing stuck conn %p\n", conn);
       espconn_disconnect(conn->conn);
     }
     // else be silent, we already printed an error
@@ -448,8 +446,6 @@ serbridgeSentCb(void *arg)
   //os_printf("Sent CB %p\n", conn);
   if (conn == NULL) return;
   //os_printf("%d ST\n", system_get_time());
-  if (conn->sentbuffer != NULL) os_free(conn->sentbuffer);
-  conn->sentbuffer = NULL;
   conn->readytosend = true;
   conn->txoverflow_at = 0;
   sendtxbuffer(conn); // send possible new data in txbuffer
@@ -494,8 +490,6 @@ serbridgeDisconCb(void *arg)
   serbridgeConnData *conn = ((struct espconn*)arg)->reverse;
   if (conn == NULL) return;
   // Free buffers
-  if (conn->sentbuffer != NULL) os_free(conn->sentbuffer);
-  conn->sentbuffer = NULL;
   if (conn->txbuffer != NULL) os_free(conn->txbuffer);
   conn->txbuffer = NULL;
   conn->txbufferlen = 0;

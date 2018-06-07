@@ -10,6 +10,7 @@
 #include "socket.h"
 
 #define SOCK_DBG
+#define SOCK_SKIP_USERCB_SENT
 
 #ifdef SOCK_DBG
 #define DBG_SOCK(format, ...) os_printf(format, ## __VA_ARGS__)
