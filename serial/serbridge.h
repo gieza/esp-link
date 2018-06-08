@@ -7,9 +7,7 @@
 
 #define MAX_CONN 4
 #define SER_BRIDGE_TIMEOUT 300 // 300 seconds = 5 minutes
-
-// Send buffer size
-#define MAX_TXBUFFER (2*1460)
+//#define SERBR_ENABLE_MALLOC     // use malloc to get a flat buffer from the console ring buffer
 
 enum connModes {
   cmInit = 0,        // initialization mode: nothing received yet
@@ -28,6 +26,7 @@ typedef struct serbridgeConnData {
   char           *sentbuffer;   // buffer sent, awaiting callback to get freed
   uint32_t       txoverflow_at; // when the transmitter started to overflow
 	bool           readytosend;   // true, if txbuffer can be sent by espconn_sent
+  int            rd;            // read offset in the main ring buffer
 } serbridgeConnData;
 
 // port1 is transparent&programming, second port is programming only
