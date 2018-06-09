@@ -387,55 +387,48 @@ sendtxbuffer(serbridgeConnData *conn)
 // Returns ESPCONN_OK (0) for success, -128 if buffer is full or error from  espconn_sent
 // Use espbuffsend instead of espconn_sent as it solves the problem that espconn_sent must
 // only be called *after* receiving an espconn_sent_callback for the previous packet.
+// single main ring buffer by leodesigner@github.com
+// the serial data is keept in the console ring buffer and shared amoung all connected clients
 static sint8 ICACHE_FLASH_ATTR
 espbuffsend(serbridgeConnData *conn, const char *data, uint16 len)
 {
-  if (conn->txbufferlen >= MAX_TXBUFFER) goto overflow;
-
-  // make sure we indeed have a buffer
-  if (conn->txbuffer == NULL) conn->txbuffer = os_zalloc(MAX_TXBUFFER);
+  sint8 result = ESPCONN_OK;
+  // the new data is in the console ring buffer now
+  int wr = consoleGetWr(); // console ring buffer writer offset
+  char* buffer = consoleGetBufPtr(); // pointer to the main ring buffer from the console
+  if (!conn->readytosend || wr == conn->rd) return result; // nothing todo if we are busy sending
+  if (wr > conn->rd) {
+    // we have a continious data in the ring buffer
+    conn->txbuffer = buffer + conn->rd;
+    conn->txbufferlen = wr - conn->rd;
+    conn->rd = wr;
+    result = sendtxbuffer(conn);
+    return result;
+  }
+  #ifdef SERBR_ENABLE_MALLOC
+  // data is wrapped in the ring buffer
+  // start the malloc dance to get continious buffer
+  int data_len = CONSOLE_BUF_MAX - conn->rd + wr;
+  conn->sentbuffer = conn->txbuffer = os_zalloc(data_len);
   if (conn->txbuffer == NULL) {
     os_printf("espbuffsend: cannot alloc tx buffer\n");
-    uint32_t free = system_get_free_heap_size();
-    os_printf("espbuffsend: free_heap_size: %d, len = %d\n",free,len); 
-    // free_heap_size: 9072, len = 13 and E:M 2928 :)
+    os_printf("espbuffsend: free_heap_size: %d, data_len = %d\n",system_get_free_heap_size(),data_len);
     return -128;
   }
-
-  // add to send buffer
-  uint16_t avail = conn->txbufferlen+len > MAX_TXBUFFER ? MAX_TXBUFFER-conn->txbufferlen : len;
-  os_memcpy(conn->txbuffer + conn->txbufferlen, data, avail);
-  conn->txbufferlen += avail;
-
-  // try to send
-  sint8 result = ESPCONN_OK;
-  if (conn->readytosend) result = sendtxbuffer(conn);
-
-  if (avail < len) {
-    // some data didn't fit into the buffer
-    if (conn->txbufferlen == 0) {
-      // we sent the prior buffer, so try again
-      return espbuffsend(conn, data+avail, len-avail);
-    }
-    goto overflow;
-  }
+  os_memcpy(conn->txbuffer, buffer + conn->rd, CONSOLE_BUF_MAX - conn->rd);
+  if (wr !=0) { os_memcpy(conn->txbuffer + CONSOLE_BUF_MAX - conn->rd, buffer, wr); }
+  conn->txbufferlen = data_len;
+  conn->rd = wr;
+  result = sendtxbuffer(conn);
+  //os_free(conn->txbuffer); // we can do this also after the sent_cb - in case if the buffer cannot be reused
+  #else
+  // in this case the data will be splitted to the two parts and sent with two calls
+  conn->txbuffer = buffer + conn->rd;
+  conn->txbufferlen = CONSOLE_BUF_MAX - conn->rd;
+  conn->rd = 0;
+  result = sendtxbuffer(conn);
+  #endif
   return result;
-
-overflow:
-  if (conn->txoverflow_at) {
-    // we've already been overflowing
-    if (system_get_time() - conn->txoverflow_at > 10*1000*1000) {
-      // no progress in 10 seconds, kill the connection
-      os_printf("serbridge: killing overflowing stuck conn %p\n", conn);
-      espconn_disconnect(conn->conn);
-    }
-    // else be silent, we already printed an error
-  } else {
-    // print 1-time message and take timestamp
-    os_printf("serbridge: txbuffer full, conn %p\n", conn);
-    conn->txoverflow_at = system_get_time();
-  }
-  return -128;
 }
 
 //callback after the data are sent
@@ -446,9 +439,12 @@ serbridgeSentCb(void *arg)
   //os_printf("Sent CB %p\n", conn);
   if (conn == NULL) return;
   //os_printf("%d ST\n", system_get_time());
+  if (conn->sentbuffer != NULL) { os_free(conn->sentbuffer); }
+  conn->sentbuffer = NULL;
   conn->readytosend = true;
   conn->txoverflow_at = 0;
-  sendtxbuffer(conn); // send possible new data in txbuffer
+  // send possible new data in txbuffer
+  espbuffsend(conn, NULL, 0); 
 }
 
 void ICACHE_FLASH_ATTR
@@ -490,7 +486,7 @@ serbridgeDisconCb(void *arg)
   serbridgeConnData *conn = ((struct espconn*)arg)->reverse;
   if (conn == NULL) return;
   // Free buffers
-  if (conn->txbuffer != NULL) os_free(conn->txbuffer);
+  if (conn->sentbuffer != NULL) os_free(conn->sentbuffer);
   conn->txbuffer = NULL;
   conn->txbufferlen = 0;
   // Send reset to attached uC if it was in programming mode
@@ -542,6 +538,7 @@ serbridgeConnectCb(void *arg)
   conn->reverse = connData+i;
   connData[i].readytosend = true;
   connData[i].conn_mode = cmInit;
+  connData[i].rd = consoleGetWr(); // init ring buffer reader offset
   // if it's the second port we start out in programming mode
   if (conn->proto.tcp->local_port == serbridgeConn2.proto.tcp->local_port)
     connData[i].conn_mode = cmPGMInit;

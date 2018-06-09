@@ -17,20 +17,19 @@
 // - console_rd==console_wr <=> buffer empty
 // - *console_rd == next char to read
 // - *console_wr == next char to write
-// - 0 <= console_xx < BUF_MAX
-// - (console_wr+1)%BUF_MAX) == console_rd <=> buffer full
-#define BUF_MAX (1024)
-static char console_buf[BUF_MAX];
+// - 0 <= console_xx < CONSOLE_BUF_MAX
+// - (console_wr+1)%CONSOLE_BUF_MAX) == console_rd <=> buffer full
+static char console_buf[CONSOLE_BUF_MAX];
 static int console_wr, console_rd;
 static int console_pos; // offset since reset of buffer
 
 static void ICACHE_FLASH_ATTR
 console_write(char c) {
   console_buf[console_wr] = c;
-  console_wr = (console_wr+1) % BUF_MAX;
+  console_wr = (console_wr+1) % CONSOLE_BUF_MAX;
   if (console_wr == console_rd) {
     // full, we write anyway and loose the oldest char
-    console_rd = (console_rd+1) % BUF_MAX; // full, eat first char
+    console_rd = (console_rd+1) % CONSOLE_BUF_MAX; // full, eat first char
     console_pos++;
   }
 }
@@ -40,7 +39,7 @@ console_write(char c) {
 static char ICACHE_FLASH_ATTR
 console_prev(void) {
   if (console_wr == console_rd) return 0;
-  return console_buf[(console_wr-1+BUF_MAX)%BUF_MAX];
+  return console_buf[(console_wr-1+CONSOLE_BUF_MAX)%CONSOLE_BUF_MAX];
 }
 #endif
 
@@ -54,7 +53,8 @@ int ICACHE_FLASH_ATTR
 ajaxConsoleReset(HttpdConnData *connData) {
   if (connData->conn==NULL) return HTTPD_CGI_DONE; // Connection aborted. Clean up.
   jsonHeader(connData, 200);
-  console_rd = console_wr = console_pos = 0;
+  console_rd = console_wr;
+  console_pos = 0; 
   serbridgeReset();
   return HTTPD_CGI_DONE;
 }
@@ -134,7 +134,7 @@ ajaxConsole(HttpdConnData *connData) {
   if (connData->conn==NULL) return HTTPD_CGI_DONE; // Connection aborted. Clean up.
   char buff[2048];
   int len; // length of text in buff
-  int console_len = (console_wr+BUF_MAX-console_rd) % BUF_MAX; // num chars in console_buf
+  int console_len = (console_wr+CONSOLE_BUF_MAX-console_rd) % CONSOLE_BUF_MAX; // num chars in console_buf
   int start = 0; // offset onto console_wr to start sending out chars
 
   jsonHeader(connData, 200);
@@ -156,7 +156,7 @@ ajaxConsole(HttpdConnData *connData) {
   len = os_sprintf(buff, "{\"len\":%d, \"start\":%d, \"text\": \"",
       console_len-start, console_pos+start);
 
-  int rd = (console_rd+start) % BUF_MAX;
+  int rd = (console_rd+start) % CONSOLE_BUF_MAX;
   while (len < 2040 && rd != console_wr) {
     uint8_t c = console_buf[rd];
     if (c == '\\' || c == '"') {
@@ -169,7 +169,7 @@ ajaxConsole(HttpdConnData *connData) {
     } else {
       buff[len++] = c;
     }
-    rd = (rd + 1) % BUF_MAX;
+    rd = (rd + 1) % CONSOLE_BUF_MAX;
   }
   os_strcpy(buff+len, "\"}"); len+=2;
   httpdSend(connData, buff, len);
@@ -181,4 +181,11 @@ void ICACHE_FLASH_ATTR consoleInit() {
   console_rd = 0;
 }
 
+int ICACHE_FLASH_ATTR consoleGetWr() {
+  return console_wr;
+}
+
+char* ICACHE_FLASH_ATTR consoleGetBufPtr() {
+  return console_buf;
+}
 
