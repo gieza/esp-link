@@ -28,7 +28,7 @@ void (*programmingCB)(char *buffer, short length) = NULL;
 static sint8 espbuffsend(serbridgeConnData *conn, const char *data, uint16 len);
 
 // Connection pool
-serbridgeConnData connData[MAX_CONN];
+serbridgeConnData connData[SER_BRIDGE_MAX_CONN];
 
 //===== TCP -> UART
 
@@ -454,7 +454,7 @@ console_process(char *buf, short len)
   for (short i=0; i<len; i++)
     console_write_char(buf[i]);
   // push the buffer into each open connection
-  for (short i=0; i<MAX_CONN; i++) {
+  for (short i=0; i<SER_BRIDGE_MAX_CONN; i++) {
     if (connData[i].conn) {
       espbuffsend(&connData[i], buf, len);
     }
@@ -518,13 +518,13 @@ serbridgeConnectCb(void *arg)
   struct espconn *conn = arg;
   // Find empty conndata in pool
   int i;
-  for (i=0; i<MAX_CONN; i++) if (connData[i].conn==NULL) break;
+  for (i=0; i<SER_BRIDGE_MAX_CONN; i++) if (connData[i].conn==NULL) break;
 #ifdef SERBR_DBG
   os_printf("Accept port %d, conn=%p, pool slot %d\n", conn->proto.tcp->local_port, conn, i);
 #endif
   syslog(SYSLOG_FAC_USER, SYSLOG_PRIO_NOTICE, "esp-link", "Accept port %d, conn=%p, pool slot %d\n",
       conn->proto.tcp->local_port, conn, i);
-  if (i==MAX_CONN) {
+  if (i==SER_BRIDGE_MAX_CONN) {
 #ifdef SERBR_DBG
     os_printf("Aiee, conn pool overflow!\n");
 #endif
@@ -610,7 +610,7 @@ serbridgeInit(int port1, int port2)
 
   espconn_regist_connectcb(&serbridgeConn1, serbridgeConnectCb);
   espconn_accept(&serbridgeConn1);
-  espconn_tcp_set_max_con_allow(&serbridgeConn1, MAX_CONN);
+  espconn_tcp_set_max_con_allow(&serbridgeConn1, SER_BRIDGE_MAX_CONN);
   espconn_regist_time(&serbridgeConn1, SER_BRIDGE_TIMEOUT, 0);
 
   // set-up the secondary port for programming
@@ -621,7 +621,7 @@ serbridgeInit(int port1, int port2)
 
   espconn_regist_connectcb(&serbridgeConn2, serbridgeConnectCb);
   espconn_accept(&serbridgeConn2);
-  espconn_tcp_set_max_con_allow(&serbridgeConn2, MAX_CONN);
+  espconn_tcp_set_max_con_allow(&serbridgeConn2, SER_BRIDGE_MAX_CONN);
   espconn_regist_time(&serbridgeConn2, SER_BRIDGE_TIMEOUT, 0);
 }
 

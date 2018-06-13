@@ -280,7 +280,7 @@ SOCKET_Setup(CmdPacket *cmd) {
 	if (socketNum > 0) {
 		uint8_t sptr = 0;
 		while (sptr < socketNum) {
-			SocketClient *_client = socketClient + sptr * sizeof(SocketClient);
+			SocketClient *_client = socketClient + sptr;
 			if (   _client->sock_mode == sock_mode 
 				&& _client->port == port
 				&& strcmp((char *)_client->host, (char *)socket_host) == 0 ) {
@@ -295,7 +295,7 @@ SOCKET_Setup(CmdPacket *cmd) {
 	}
 
 	// allocate a connection structure
-	SocketClient *client = socketClient + (socketNum % MAX_SOCKET)  * sizeof(SocketClient);
+	SocketClient *client = socketClient + (socketNum % MAX_SOCKET);
 	uint8_t clientNum = socketNum;
 	socketNum = (socketNum + 1) % MAX_SOCKET;
 
@@ -396,7 +396,7 @@ SOCKET_Send(CmdPacket *cmd) {
 	
 	// Get client
 	uint32_t clientNum = cmd->value;
-	SocketClient *client = socketClient + (clientNum % MAX_SOCKET) * sizeof(SocketClient);
+	SocketClient *client = socketClient + (clientNum % MAX_SOCKET);
 	DBG_SOCK("SOCKET #%d: send", clientNum);
 
 	if (cmd->argc != 1 && cmd->argc != 2) {

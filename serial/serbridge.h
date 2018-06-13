@@ -5,7 +5,7 @@
 #include <c_types.h>
 #include <espconn.h>
 
-#define MAX_CONN 4
+#define SER_BRIDGE_MAX_CONN 4
 #define SER_BRIDGE_TIMEOUT 300 // 300 seconds = 5 minutes
 //#define SERBR_ENABLE_MALLOC     // use malloc to get a flat buffer from the console ring buffer
 
