@@ -21,7 +21,7 @@ static esp_tcp serbridgeTcp1, serbridgeTcp2;
 static int8_t mcu_reset_pin, mcu_isp_pin; 
 static bool mcu_isp_val;
 
-uint8_t in_mcu_flashing;   // for disabling slip during MCU flashing
+uint8_t in_mcu_flashing = 0;   // for disabling slip during MCU flashing
 
 void (*programmingCB)(char *buffer, short length) = NULL;
 
@@ -262,6 +262,11 @@ telnetUnwrap(serbridgeConnData *conn, uint8_t *inBuf, int len)
 void ICACHE_FLASH_ATTR
 serbridgeReset()
 {
+  in_mcu_flashing = 0; // return to normal non mcu flashing mode
+  uart0_baud(flashConfig.baud_rate);
+  if (mcu_isp_pin >= 0) { // put ISP pin to the default value
+    GPIO_OUTPUT_SET(mcu_isp_pin, mcu_isp_val);
+  }
   if (mcu_reset_pin >= 0) {
 #ifdef SERBR_DBG
     os_printf("MCU reset gpio%d\n", mcu_reset_pin);
@@ -346,7 +351,15 @@ serbridgeRecvCb(void *arg, char *data, unsigned short len)
     conn->conn_mode = cmPGM;
     in_mcu_flashing++; // disable SLIP so it doesn't interfere with flashing
     serledFlash(50); // short blink on serial LED
-    return;
+    #ifdef SKIP_AT_RESET
+    return; // this is dropping start sequence characters -- forces to run stm32flash twice
+    #endif
+    if (len == 1 && *data == 0x7F) { // stm32 serial upload must be at reasonable speed
+      if (flashConfig.baud_rate > 460800) {
+        uart0_baud(460800);
+        os_delay_us(100L);
+      }
+    }
   }
 
 
@@ -491,9 +504,13 @@ serbridgeDisconCb(void *arg)
   conn->txbufferlen = 0;
   // Send reset to attached uC if it was in programming mode
   if (conn->conn_mode == cmPGM && mcu_reset_pin >= 0) {
-    if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, !mcu_isp_val);
-    /* Reset is not needed in case of STM32 */
-    if (mcu_isp_val != 0) {
+    if (mcu_isp_pin >= 0) GPIO_OUTPUT_SET(mcu_isp_pin, mcu_isp_val);
+    if (mcu_isp_val == 0) {
+      // Reset is not needed in case of STM32
+      // restore original baud rate for STM32 console
+      uart0_baud(flashConfig.baud_rate);
+      os_delay_us(100L);
+    } else {
       os_delay_us(100L);
       GPIO_OUTPUT_SET(mcu_reset_pin, 0);
       os_delay_us(1000L);
@@ -596,6 +613,7 @@ serbridgeInitPins()
 void ICACHE_FLASH_ATTR
 serbridgeInit(int port1, int port2)
 {
+  in_mcu_flashing = 0;
   serbridgeInitPins();
 
   os_memset(connData, 0, sizeof(connData));
