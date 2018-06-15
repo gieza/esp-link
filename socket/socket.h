@@ -19,6 +19,7 @@ typedef enum {
   SOCKET_TCP_CLIENT_LISTEN, /**< TCP socket client, waits for response from server after sending */
   SOCKET_TCP_SERVER, /**< TCP socket server */
   SOCKET_UDP,  /**< UDP socket for sending and receiving UDP packets */
+  SOCKET_UDP_WAIT_RESOLVER, /** UDP socket waiting to resolve hostname to ip */
 } socketMode;
 
 // Callback type
