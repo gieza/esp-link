@@ -220,8 +220,7 @@ socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg) {
 }
 
 // please note if your local DNS will be too late with response (>2seconds)
-// the UDP connection setup will timeout (timeout can be ajusted by modifying udp.begin in ElClient)
-// also attached MCU can repeat UDP.begin in case of failure  
+// MCU need to repeat UDP.begin in case of failure
 static void ICACHE_FLASH_ATTR
 udp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg) {
 	struct espconn *pConn = (struct espconn *)arg;
@@ -385,7 +384,6 @@ SOCKET_Setup(CmdPacket *cmd) {
 	}
 	client->pCon->state = ESPCONN_NONE;
 
-	// os_memcpy(client->host, socket_host, 4); // useless copy ???
 	if (sock_mode != SOCKET_UDP) {
 		client->pCon->proto.tcp->remote_port = client->port;
 		client->pCon->proto.tcp->local_port = client->port; // espconn_port();	
