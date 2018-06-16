@@ -67,7 +67,7 @@ handled top-down, so make sure to put more specific rules above the more
 general ones. Authorization things (like authBasic) act as a 'barrier' and
 should be placed above the URLs they protect.
 */
-HttpdBuiltInUrl builtInUrls[] = {
+const HttpdBuiltInUrl builtInUrls[] = {
   { "/", cgiRedirect, "/home.html" },
   { "/menu", cgiMenu, NULL },
   { "/flash/next", cgiGetFirmwareNext, NULL },

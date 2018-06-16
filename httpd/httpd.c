@@ -36,7 +36,7 @@ Esp8266 http server - core routines
 
 
 //This gets set at init time.
-static HttpdBuiltInUrl *builtInUrls;
+static const HttpdBuiltInUrl *builtInUrls;
 
 //Private data for http connection
 struct HttpdPriv {
@@ -612,7 +612,7 @@ static void ICACHE_FLASH_ATTR httpdConnectCb(void *arg) {
 }
 
 //Httpd initialization routine. Call this to kick off webserver functionality.
-void ICACHE_FLASH_ATTR httpdInit(HttpdBuiltInUrl *fixedUrls, int port) {
+void ICACHE_FLASH_ATTR httpdInit(const HttpdBuiltInUrl *fixedUrls, int port) {
   int i;
 
   for (i = 0; i<MAX_CONN; i++) {
