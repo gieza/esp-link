@@ -105,10 +105,8 @@ int ICACHE_FLASH_ATTR cgiPinsSet(HttpdConnData *connData) {
     serbridgeInitPins();
     serledInit();
     statusInit();
-    if (flashConfig.cpu_freq == 160) {
-      if (system_update_cpu_freq(flashConfig.cpu_freq)) {
-        os_printf("System CPU freq is set to 160 Mhz\n");
-      }
+    if (system_update_cpu_freq(flashConfig.cpu_freq)) {
+      os_printf("System CPU freq is updated to %d Mhz\n", cpufreq);
     }
 
     // save to flash
