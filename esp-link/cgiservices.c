@@ -75,6 +75,7 @@ int ICACHE_FLASH_ATTR cgiSystemInfo(HttpdConnData *connData) {
       "\"slip\": \"%s\", "
       "\"mqtt\": \"%s/%s\", "
       "\"baud\": \"%d\", "
+      "\"cpu-freq\": \"%d\", "
       "\"description\": \"%s\""
     " }",
     flashConfig.hostname,
@@ -88,6 +89,7 @@ int ICACHE_FLASH_ATTR cgiSystemInfo(HttpdConnData *connData) {
     flashConfig.mqtt_enable ? "enabled" : "disabled",
     mqttState(),
     flashConfig.baud_rate,
+    flashConfig.cpu_freq,
     flashConfig.sys_descr
     );
 

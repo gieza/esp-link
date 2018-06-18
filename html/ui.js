@@ -393,12 +393,12 @@ function showNotification(text) {
 //===== GPIO Pin mux card
 
 var pinPresets = {
-  // array: reset, isp, conn, ser, swap, rxpup, invisp
-  "esp-01":       [  0, -1, 2, -1, 0, 1, 0 ],
-  "esp-12":       [ 12, 14, 0,  2, 0, 1, 0 ],
-  "esp-12 swap":  [  1,  3, 0,  2, 1, 1, 0 ],
-  "esp-bridge":   [ 12, 13, 0, 14, 0, 0, 0 ],
-  "wifi-link-12": [  1,  3, 0,  2, 1, 0, 0 ],
+  // array: reset, isp, conn, ser, swap, rxpup, invisp, cpufreq
+  "esp-01":       [  0, -1, 2, -1, 0, 1, 0, 80],
+  "esp-12":       [ 12, 14, 0,  2, 0, 1, 0, 80],
+  "esp-12 swap":  [  1,  3, 0,  2, 1, 1, 0, 80],
+  "esp-bridge":   [ 12, 13, 0, 14, 0, 0, 0, 80],
+  "wifi-link-12": [  1,  3, 0,  2, 1, 0, 0, 80],
 };
 
 function createPresets(sel) {
@@ -419,6 +419,7 @@ function createPresets(sel) {
     setPP("swap",  pp[4]);
     $("#pin-rxpup").checked = !!pp[5];
     $("#pin-invisp").checked = !!pp[6];
+    $("#cpufreq").value = pp[7];
     sel.value = 0;
   };
 
@@ -455,6 +456,7 @@ function displayPins(resp) {
   $("#pin-swap").value = resp["swap"];
   $("#pin-rxpup").checked = !!resp["rxpup"];
   $("#pin-invisp").checked = !!resp["invisp"];
+  $("#cpufreq").value = resp["cpufreq"];
   createPresets($("#pin-preset"));
 
   $("#pin-spinner").setAttribute("hidden", "");
@@ -477,6 +479,7 @@ function setPins(ev) {
   });
   url += "&rxpup=" + ($("#pin-rxpup").checked ? "1" : "0");
   url += "&invisp=" + ($("#pin-invisp").checked ? "1" : "0");
+  url += "&cpufreq=" + ($("#cpufreq").value);
 //  console.log("set pins: " + url);
   ajaxSpin("POST", url, function() {
     showNotification("Pin assignment changed");

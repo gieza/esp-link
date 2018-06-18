@@ -34,7 +34,8 @@ FlashConfig flashDefault = {
   .data_bits	= EIGHT_BITS,
   .parity	= NONE_BITS,
   .stop_bits	= ONE_STOP_BIT,
-  .invisp       = 0
+  .invisp       = 0,
+  .cpu_freq     = 80
 };
 
 typedef union {
@@ -160,6 +161,10 @@ bool ICACHE_FLASH_ATTR configRestore(void) {
       flashConfig.data_bits = flashDefault.data_bits;
       flashConfig.parity = flashDefault.parity;
       flashConfig.stop_bits = flashDefault.stop_bits;
+  }
+  // default cpu frequency
+  if (flashConfig.cpu_freq == 0) {
+      flashConfig.cpu_freq = 80;
   }
   return true;
 }

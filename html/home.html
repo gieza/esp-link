@@ -106,6 +106,16 @@
                   <input id="pin-invisp" type="checkbox">
                   <div class="popup">Invert ISP pin (STM32)</div>
                 </div>
+                <div class="pure-control-group">
+                  <label for="cpufreq">CPU Freq</label>
+                  <select id="cpufreq" class="pure-button">
+                    <option value="80">80 Mhz</option>
+                    <option value="160">160 Mhz</option>
+                  </select>
+                  <div class="popup">Set ESP8266 CPU frequency, will run faster at 160 Mhz,
+                     may cost additional power consumption. 
+                  </div>
+                </div>
                 <button id="set-pins" type="submit" class="pure-button button-primary">Change!</button>
               </form>
             </div>
@@ -135,6 +145,7 @@
               </div>
             </td></tr>
             <tr><td>Current partition</td><td class="system-partition"></td></tr>
+            <tr><td>CPU freq</td><td class="system-cpu-freq"></td></tr>
             <tr><td colspan=2 class="popup-target">Description:<br>
                 <div class="click-to-edit system-description">
                   <span class="edit-off" style="display:block; width:auto;"></span>
