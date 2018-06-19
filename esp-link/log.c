@@ -87,7 +87,6 @@ int ICACHE_FLASH_ATTR
 ajaxLog(HttpdConnData *connData) {
   char buff[2048];
   int len; // length of text in buff
-  int log_len = (log_wr+BUF_MAX-log_rd) % BUF_MAX; // num chars in log_buf
   int start = 0; // offset onto log_wr to start sending out chars
 
   if (connData->conn==NULL) return HTTPD_CGI_DONE; // Connection aborted. Clean up.
@@ -97,20 +96,15 @@ ajaxLog(HttpdConnData *connData) {
   len = httpdFindArg(connData->getArgs, "start", buff, sizeof(buff));
   if (len > 0) {
     start = atoi(buff);
-    if (start < log_pos) {
-      start = 0;
-    } else if (start >= log_pos+log_len) {
-      start = log_len;
-    } else {
-      start = start - log_pos;
-    }
+    if (start == 0) { start = log_rd; }  // show whole log
   }
 
   // start outputting
+  int rd = start = start % BUF_MAX;
   len = os_sprintf(buff, "{\"len\":%d, \"start\":%d, \"text\": \"",
-      log_len-start, log_pos+start);
+      (log_wr+BUF_MAX-start) % BUF_MAX, start);
 
-  int rd = (log_rd+start) % BUF_MAX;
+  //int rd = (log_rd+start) % BUF_MAX;
   while (len < 2040 && rd != log_wr) {
     uint8_t c = log_buf[rd];
     if (c == '\\' || c == '"') {
