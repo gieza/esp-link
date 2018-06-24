@@ -500,6 +500,7 @@ serbridgeDisconCb(void *arg)
   if (conn == NULL) return;
   // Free buffers
   if (conn->sentbuffer != NULL) os_free(conn->sentbuffer);
+  conn->sentbuffer = NULL;
   conn->txbuffer = NULL;
   conn->txbufferlen = 0;
   // Send reset to attached uC if it was in programming mode
