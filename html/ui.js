@@ -155,11 +155,11 @@ function ajaxReq(method, url, ok_cb, err_cb, data) {
   var xhr = j();
   xhr.open(method, url, true);
   var timeout = setTimeout(function() {
-    xhr.abort();
-    console.log("XHR abort:", method, url);
     xhr.status = 599;
     xhr.responseText = "request time-out";
-  }, 9000);
+    xhr.abort();
+    console.log("XHR abort:", method, url);
+  }, 30000);
   xhr.onreadystatechange = function() {
     if (xhr.readyState != 4) { return; }
     clearTimeout(timeout);
