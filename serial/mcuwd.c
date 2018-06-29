@@ -13,7 +13,7 @@ static void ICACHE_FLASH_ATTR mcuwdTimerCb(void *v) {
   }
   mcuwdNoActivitySeconds++;
   uint16_t timeout = flashConfig.mcu_wd_timeout;
-  if (timeout>0 && mcuwdNoActivitySeconds>timeout) {
+  if (timeout>0 && mcuwdNoActivitySeconds>timeout && flashConfig.slip_enable) {
     mcuwdNoActivitySeconds=0;
     os_printf("Watchdog detected MCU inactivity for over %d seconds, attempting MCU reset...\n", timeout);
     serbridgeReset();
