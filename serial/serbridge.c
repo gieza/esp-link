@@ -400,7 +400,7 @@ sendtxbuffer(serbridgeConnData *conn)
 // Returns ESPCONN_OK (0) for success, -128 if buffer is full or error from  espconn_sent
 // Use espbuffsend instead of espconn_sent as it solves the problem that espconn_sent must
 // only be called *after* receiving an espconn_sent_callback for the previous packet.
-// single main ring buffer by leodesigner@github.com
+// single main ring buffer by leodesigner@github
 // the serial data is keept in the console ring buffer and shared amoung all connected clients
 static sint8 ICACHE_FLASH_ATTR
 espbuffsend(serbridgeConnData *conn, const char *data, uint16 len)
