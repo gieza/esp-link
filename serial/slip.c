@@ -6,6 +6,7 @@
 #include "serbridge.h"
 #include "console.h"
 #include "cmd.h"
+#include "mcuwd.h"
 
 #ifdef SLIP_DBG
 #define DBG(format, ...) do { os_printf(format, ## __VA_ARGS__); } while(0)
@@ -42,6 +43,7 @@ slip_process() {
     uint16_t rcv = ((uint16_t)slip_buf[slip_len-2]) | ((uint16_t)slip_buf[slip_len-1] << 8);
     if (crc == rcv) {
       cmdParsePacket((uint8_t*)slip_buf, slip_len-2);
+      mcuwd_feed();
     } else {
       os_printf("SLIP: bad CRC, crc=%04x rcv=%04x len=%d\n", crc, rcv, slip_len);
 

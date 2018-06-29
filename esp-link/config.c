@@ -35,7 +35,8 @@ FlashConfig flashDefault = {
   .parity	= NONE_BITS,
   .stop_bits	= ONE_STOP_BIT,
   .invisp       = 0,
-  .cpu_freq     = 80
+  .cpu_freq     = 80,
+  .mcu_wd_timeout = 0
 };
 
 typedef union {

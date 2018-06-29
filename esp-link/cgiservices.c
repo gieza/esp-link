@@ -5,6 +5,7 @@
 #include "config.h"
 #include "sntp.h"
 #include "cgimqtt.h"
+#include "mcuwd.h"
 #ifdef SYSLOG
 #include "syslog.h"
 #endif
@@ -126,7 +127,8 @@ int ICACHE_FLASH_ATTR cgiServicesInfo(HttpdConnData *connData) {
       "\"timezone_offset\": %d, "
       "\"sntp_server\": \"%s\", "
       "\"mdns_enable\": \"%s\", "
-      "\"mdns_servername\": \"%s\""
+      "\"mdns_servername\": \"%s\", "
+      "\"mcu-wd-timeout\": %d"
     " }",
 #ifdef SYSLOG
     flashConfig.syslog_host,
@@ -138,7 +140,8 @@ int ICACHE_FLASH_ATTR cgiServicesInfo(HttpdConnData *connData) {
     flashConfig.timezone_offset,
     flashConfig.sntp_server,
     flashConfig.mdns_enable ? "enabled" : "disabled",
-    flashConfig.mdns_servername
+    flashConfig.mdns_servername,
+    flashConfig.mcu_wd_timeout
     );
 
   jsonHeader(connData, 200);
@@ -215,6 +218,9 @@ int ICACHE_FLASH_ATTR cgiServicesSet(HttpdConnData *connData) {
       }
     }
   }
+
+  if (getUInt16Arg(connData, "mcu-wd-timeout", &flashConfig.mcu_wd_timeout))
+    mcuwd_init();
 
   if (configSave()) {
     httpdStartResponse(connData, 204);

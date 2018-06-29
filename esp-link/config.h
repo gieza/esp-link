@@ -43,6 +43,7 @@ typedef struct {
   int8_t   stop_bits;
   int8_t   invisp;                     // invert ISP pin for STM32
   uint8_t  cpu_freq;                   // cpu freq 0 or 80 is a default, 160 overclock
+  uint16_t mcu_wd_timeout;             // watchdog timeout for the MCU in milliseconds, 0 - disable watchdog
 } FlashConfig;
 extern FlashConfig flashConfig;
 

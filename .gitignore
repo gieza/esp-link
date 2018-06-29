@@ -17,4 +17,3 @@ espfs/mkespfsimage/mman-win32/libmman.a
 local.conf
 *.tgz
 .vscode/
-firmware/

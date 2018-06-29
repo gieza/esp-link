@@ -32,6 +32,7 @@
 #include "log.h"
 #include "gpio.h"
 #include "cgiservices.h"
+#include "mcuwd.h"
 
 #ifdef WEBSERVER
 #include "web-server.h"
@@ -228,6 +229,7 @@ user_init(void) {
     mqtt_client_init();
   }
 #endif
+  mcuwd_init();
   NOTICE("initializing user application");
   app_init();
   NOTICE("Waiting for work to do...");

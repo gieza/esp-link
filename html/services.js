@@ -50,6 +50,7 @@ function displayServices(data) {
   $("#syslog-spinner").setAttribute("hidden", "");
   $("#sntp-spinner").setAttribute("hidden", "");
   $("#mdns-spinner").setAttribute("hidden", "");
+  $("#mcuwd-spinner").setAttribute("hidden", "");
 
   if (data.syslog_host !== undefined) {
     $("#Syslog-form").removeAttribute("hidden");
@@ -59,6 +60,7 @@ function displayServices(data) {
   }
   $("#SNTP-form").removeAttribute("hidden");
   $("#mDNS-form").removeAttribute("hidden");
+  $("#mcuwd-form").removeAttribute("hidden");
 
   var i, inputs = $("input");
   for (i = 0; i < inputs.length; i++) {

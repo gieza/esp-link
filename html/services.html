@@ -102,6 +102,24 @@
               </button>
             </form>
           </div>
+          <div class="card">
+            <h1>
+              MCU Watchdog
+              <div id="mcuwd-spinner" class="spinner spinner-small"></div>
+            </h1>
+            <form action="#" id="mcuwd-form" class="pure-form" hidden>
+              <div class="pure-form-stacked">
+                <div>
+                  <label>Inactivity timeout, sec.</label>
+                  <input type="text" name="mcu-wd-timeout" />
+                  <div class="popup">Reset MCU if no SLIP activity during the specified time. Set to 0 to disable watchdog timer</div>
+                </div>
+              </div>
+              <button id="mcuwd-button" type="submit" class="pure-button button-primary">
+                Update Watchdog settings!
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -115,6 +133,7 @@ onLoad(function() {
   bnd($("#Syslog-form"), "submit", changeServices);
   bnd($("#SNTP-form"), "submit", changeServices);
   bnd($("#mDNS-form"), "submit", changeServices);
+  bnd($("#mcuwd-form"), "submit", changeServices);
 });
 </script>
 </body></html>
