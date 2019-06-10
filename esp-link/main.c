@@ -87,6 +87,7 @@ const HttpdBuiltInUrl builtInUrls[] = {
   { "/log/text", ajaxLog, NULL },
   { "/log/dbg", ajaxLogDbg, NULL },
   { "/log/reset", cgiReset, NULL },
+  { "/log/wipeSettings", cgiWipeSettings, NULL },
   { "/console/reset", ajaxConsoleReset, NULL },
   { "/console/baud", ajaxConsoleBaud, NULL },
   { "/console/fmt", ajaxConsoleFormat, NULL },

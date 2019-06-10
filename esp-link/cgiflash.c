@@ -16,6 +16,7 @@ Some flash handling cgi routines. Used for reading the existing flash and updati
 #include <esp8266.h>
 #include "cgi.h"
 #include "cgiflash.h"
+#include "config.h"
 
 #ifdef CGIFLASH_DBG
 #define DBG(format, ...) do { os_printf(format, ## __VA_ARGS__); } while(0)
@@ -194,5 +195,25 @@ int ICACHE_FLASH_ATTR cgiReset(HttpdConnData *connData) {
   os_timer_disarm(&flash_reboot_timer);
   os_timer_setfn(&flash_reboot_timer, (os_timer_func_t *)system_restart, NULL);
   os_timer_arm(&flash_reboot_timer, 2000, 1);
+  return HTTPD_CGI_DONE;
+}
+
+int ICACHE_FLASH_ATTR cgiWipeSettings(HttpdConnData *connData) {
+  if (connData->conn == NULL) return HTTPD_CGI_DONE; // Connection aborted. Clean up.
+
+  // httpdStartResponse(connData, 200);
+  // httpdHeader(connData, "Content-Length", "0");
+  // httpdEndHeaders(connData);
+
+  // clean-up settings
+    //if (configWipe()) {
+    httpdStartResponse(connData, 200);
+    httpdEndHeaders(connData);
+  //} else {
+//    httpdStartResponse(connData, 500);
+    //httpdEndHeaders(connData);
+    //httpdSend(connData, "Failed to wipe config", -1);
+  //}
+  
   return HTTPD_CGI_DONE;
 }
