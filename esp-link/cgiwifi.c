@@ -641,6 +641,17 @@ int ICACHE_FLASH_ATTR cgiApSettingsChange(HttpdConnData *connData) {
             apconf.ssid_hidden = 0;
         }
     }
+    // Set channel to be hidden or not
+    len=httpdFindArg(connData->getArgs, "ap_channel", buff, sizeof(buff));
+    if(len>0){
+        int value = atoi(buff);
+        if(value >= 1  || value <= 13){
+            apconf.channel = value;
+        }else{
+            // If out of range, set by default
+            apconf.channel = 1;
+        }
+    }
     // Store new configuration
     wifi_softap_set_config(&apconf);
 
@@ -660,6 +671,7 @@ int ICACHE_FLASH_ATTR cgiApSettingsInfo(HttpdConnData *connData) {
                "\"ap_authmode\": %d, "
                "\"ap_maxconn\": %d, "
                "\"ap_beacon\": %d, "
+               "\"ap_channel\": %d, "
                "\"ap_hidden\": \"%s\" "
                " }",
                apconf.ssid,
@@ -667,6 +679,7 @@ int ICACHE_FLASH_ATTR cgiApSettingsInfo(HttpdConnData *connData) {
                apconf.authmode,
                apconf.max_connection,
                apconf.beacon_interval,
+               apconf.channel,
                apconf.ssid_hidden ? "enabled" : "disabled"
                );
 

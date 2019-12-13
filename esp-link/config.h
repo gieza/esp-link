@@ -23,8 +23,8 @@ typedef struct {
   uint16_t mqtt_port, mqtt_keepalive;  // MQTT Host port, MQTT Keepalive timer
   char     mqtt_old_host[32],          // replaced by 64-char mqtt_host below
            mqtt_clientid[48],
-           mqtt_username[32],
-           mqtt_password[32],
+           mqtt_old_username[32],
+           mqtt_old_password[32],      // replaced by 70-char mqtt_password below
            mqtt_status_topic[32];
   char     sys_descr[129];             // system description
   int8_t   rx_pullup;                  // internal pull-up on RX pin
@@ -41,7 +41,8 @@ typedef struct {
   int8_t   data_bits;
   int8_t   parity;
   int8_t   stop_bits;
-  int8_t   invisp;                     // invert ISP pin for STM32
+  char     mqtt_password[70];          // MQTT password, was 32-char mqtt_old_password
+  char     mqtt_username[70];          // MQTT username, was 32-char mqtt_old_username  int8_t   invisp;                     // invert ISP pin for STM32
   uint8_t  cpu_freq;                   // cpu freq 0 or 80 is a default, 160 overclock
   uint16_t mcu_wd_timeout;             // watchdog timeout for the MCU in milliseconds, 0 - disable watchdog
 } FlashConfig;
