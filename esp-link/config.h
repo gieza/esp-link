@@ -42,7 +42,8 @@ typedef struct {
   int8_t   parity;
   int8_t   stop_bits;
   char     mqtt_password[70];          // MQTT password, was 32-char mqtt_old_password
-  char     mqtt_username[70];          // MQTT username, was 32-char mqtt_old_username  int8_t   invisp;                     // invert ISP pin for STM32
+  char     mqtt_username[70];          // MQTT username, was 32-char mqtt_old_username  
+  int8_t   invisp;                     // invert ISP pin for STM32
   uint8_t  cpu_freq;                   // cpu freq 0 or 80 is a default, 160 overclock
   uint16_t mcu_wd_timeout;             // watchdog timeout for the MCU in milliseconds, 0 - disable watchdog
 } FlashConfig;
